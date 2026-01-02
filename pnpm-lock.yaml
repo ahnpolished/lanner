@@ -8,6 +8,9 @@ importers:
 
   .:
     dependencies:
+      '@ahnopologetic/use-prompt-api':
+        specifier: ^0.1.1
+        version: 0.1.1(react@18.2.0)(zod@4.3.4)
       plasmo:
         specifier: 0.90.5
         version: 0.90.5(@swc/core@1.15.8(@swc/helpers@0.5.18))(@swc/helpers@0.5.18)(@types/node@20.11.5)(postcss@8.4.33)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)
@@ -20,6 +23,9 @@ importers:
       tailwindcss:
         specifier: 3.4.1
         version: 3.4.1
+      zod:
+        specifier: ^4.3.4
+        version: 4.3.4
     devDependencies:
       '@ianvs/prettier-plugin-sort-imports':
         specifier: 4.1.1
@@ -27,6 +33,9 @@ importers:
       '@types/chrome':
         specifier: 0.0.258
         version: 0.0.258
+      '@types/dom-chromium-ai':
+        specifier: ^0.0.13
+        version: 0.0.13
       '@types/node':
         specifier: 20.11.5
         version: 20.11.5
@@ -47,6 +56,17 @@ importers:
         version: 5.3.3
 
 packages:
+
+  '@ahnopologetic/use-prompt-api@0.1.1':
+    resolution: {integrity: sha512-OLKMvV6VbSzI6Bk2e25y6TnOYZzQIao8IcmuGUKF3f7UIhR2mt533s1eEMWg/VNp9VAu5K1urbNxNPHlSXp2yg==}
+    peerDependencies:
+      react: ^18.0.0 || ^19.0.0
+      zod: ^3.22.0
+    peerDependenciesMeta:
+      react:
+        optional: true
+      zod:
+        optional: true
 
   '@alloc/quick-lru@5.2.0':
     resolution: {integrity: sha512-UrcABB+4bUrFABwbluTIBErXwvbsU/V7TZWfmbgJfbkwiBuziS9gxdODUyuiecfdGQ85jglMW6juS3+z5TsKLw==}
@@ -1511,6 +1531,9 @@ packages:
 
   '@types/chrome@0.0.258':
     resolution: {integrity: sha512-vicJi6cg2zaFuLmLY7laG6PHBknjKFusPYlaKQ9Zlycskofy71rStlGvW07MUuqUIVorZf8k5KH+zeTTGcH2dQ==}
+
+  '@types/dom-chromium-ai@0.0.13':
+    resolution: {integrity: sha512-m+CAxlofdsZpP3QVhY9Ys4yUMyRRDfs5kmx+DYywKhNpn9Q6Nt8Gtn3/ayK/rjiHJRY8QJwiNHD6LG55JWibdA==}
 
   '@types/estree@1.0.8':
     resolution: {integrity: sha512-dWHzHa2WqEXI/O1E9OjrocMTKJl2mSrEolh1Iomrv6U+JuNwaHXsXx9bLu5gG7BUWFIN0skIQJQ/L1rIex4X6w==}
@@ -3085,7 +3108,15 @@ packages:
     resolution: {integrity: sha512-U/PBtDf35ff0D8X8D0jfdzHYEPFxAI7jJlxZXwCSez5M3190m+QobIfh+sWDWSHMCWWJN2AWamkegn6vr6YBTw==}
     engines: {node: '>=18'}
 
+  zod@4.3.4:
+    resolution: {integrity: sha512-Zw/uYiiyF6pUT1qmKbZziChgNPRu+ZRneAsMUDU6IwmXdWt5JwcUfy2bvLOCUtz5UniaN/Zx5aFttZYbYc7O/A==}
+
 snapshots:
+
+  '@ahnopologetic/use-prompt-api@0.1.1(react@18.2.0)(zod@4.3.4)':
+    optionalDependencies:
+      react: 18.2.0
+      zod: 4.3.4
 
   '@alloc/quick-lru@5.2.0': {}
 
@@ -4820,6 +4851,8 @@ snapshots:
       '@types/filesystem': 0.0.36
       '@types/har-format': 1.2.16
 
+  '@types/dom-chromium-ai@0.0.13': {}
+
   '@types/estree@1.0.8': {}
 
   '@types/filesystem@0.0.36':
@@ -6411,3 +6444,5 @@ snapshots:
   yaml@2.8.2: {}
 
   yoctocolors-cjs@2.1.3: {}
+
+  zod@4.3.4: {}
