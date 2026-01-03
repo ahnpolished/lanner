@@ -4,7 +4,45 @@
 @tailwind components;
 @tailwind utilities;
 
-#plasmo-shadow-container {
+#plasmo-shadow-container,
+#lanner-popup-root {
   all: initial;
   box-sizing: border-box;
+  font-family: "Inter Tight", sans-serif;
+}
+
+#plasmo-shadow-container *,
+#lanner-popup-root * {
+  box-sizing: border-box;
+  border-width: 0;
+  border-style: solid;
+  border-color: currentColor;
+}
+
+#plasmo-shadow-container img,
+#plasmo-shadow-container svg,
+#plasmo-shadow-container video,
+#plasmo-shadow-container canvas,
+#plasmo-shadow-container audio,
+#plasmo-shadow-container iframe,
+#plasmo-shadow-container embed,
+#plasmo-shadow-container object,
+#lanner-popup-root img,
+#lanner-popup-root svg,
+#lanner-popup-root video,
+#lanner-popup-root canvas,
+#lanner-popup-root audio,
+#lanner-popup-root iframe,
+#lanner-popup-root embed,
+#lanner-popup-root object {
+  display: block;
+  vertical-align: middle;
+}
+
+#plasmo-shadow-container img,
+#plasmo-shadow-container video,
+#lanner-popup-root img,
+#lanner-popup-root video {
+  max-width: 100%;
+  height: auto;
 }

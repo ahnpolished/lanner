@@ -5,8 +5,8 @@ import { motion, AnimatePresence } from "framer-motion"
 
 import { useSpeechRecognition } from "../hooks/useSpeechRecognition"
 import { createEvent, type CalendarEvent } from "../lib/calendar"
-import "../style.css"
 import { LannerAILogo } from "./LannerAILogo"
+
 
 // Move schema to a constant string for the prompt
 const SCHEMA_DEF = `
@@ -200,7 +200,7 @@ export default function CalendarOverlay() {
                             </div>
                             <button
                                 onClick={toggleOverlay}
-                                className="p-1.5 rounded-full hover:bg-white/10 text-white/40 hover:text-white transition-colors"
+                                className="p-1.5 rounded-full bg-white/5 hover:bg-white/10 text-white/40 hover:text-white transition-colors"
                             >
                                 <X size={16} />
                             </button>
@@ -264,8 +264,9 @@ export default function CalendarOverlay() {
                                     >
                                         <div className="relative group">
                                             <textarea
-                                                className="w-full h-24 bg-transparent border-0 p-4 text-xl font-medium text-white placeholder-white/20 resize-none focus:ring-0 leading-relaxed focus:outline-none"
+                                                className="w-full h-24 bg-transparent border-0 p-4 text-xl text-white placeholder-white/20 resize-none focus:ring-0 leading-relaxed focus:outline-none"
                                                 placeholder="Coffee with Ryan tomorrow at 10am..."
+                                                style={{ fontFamily: "inherit" }}
                                                 value={textInput}
                                                 onChange={(e) => setTextInput(e.target.value)}
                                                 onKeyDown={(e) => {

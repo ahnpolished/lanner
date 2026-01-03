@@ -104,7 +104,6 @@ function IndexPopup() {
 
     try {
       const rawResult = await prompt(`User Request: ${textInput}`)
-      console.log("Raw Model Output:", rawResult)
 
       // clean up markdown if present
       const cleanJson = rawResult.replace(/```json\n?|\n?```/g, "").trim()
@@ -171,6 +170,7 @@ function IndexPopup() {
 
   return (
     <motion.div
+      id="lanner-popup-root"
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       transition={{ duration: 0.3 }}
@@ -245,6 +245,7 @@ function IndexPopup() {
                 <textarea
                   className="w-full h-32 bg-transparent border-0 p-4 text-xl font-medium text-white placeholder-white/20 resize-none focus:ring-0 leading-relaxed outline-none"
                   placeholder="Coffee with Ryan tomorrow at 10am..."
+                  style={{ fontFamily: "inherit" }}
                   value={textInput}
                   onChange={(e) => setTextInput(e.target.value)}
                   disabled={status === "generating"}
