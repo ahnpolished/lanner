@@ -45,6 +45,15 @@
       "scopes": [
         "https://www.googleapis.com/auth/calendar.events"
       ]
+    },
+    "commands": {
+      "_execute_action": {
+        "suggested_key": {
+          "default": "Ctrl+Shift+O",
+          "mac": "Command+Shift+O"
+        },
+        "description": "Open Calendar AI Assistant"
+      }
     }
   },
   "pnpm": {
