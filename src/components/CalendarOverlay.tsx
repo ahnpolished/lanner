@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react"
-import { CalendarPlus, X, Mic, Send, Check, Loader2, RefreshCcw, Download } from "lucide-react"
+import { X, Mic, Send, Check, Loader2, RefreshCcw, Download, Sparkles, Calendar } from "lucide-react"
 import { usePromptAPI } from "@ahnopologetic/use-prompt-api/react"
 
 import { useSpeechRecognition } from "../hooks/useSpeechRecognition"
@@ -24,7 +24,6 @@ const SCHEMA_DEF = `
 export default function CalendarOverlay() {
     const [isOpen, setIsOpen] = useState(false)
     const [textInput, setTextInput] = useState("")
-    // Changed to array
     const [generatedEvents, setGeneratedEvents] = useState<CalendarEvent[]>([])
 
     // Status can include specific count if needed, but for now simple
@@ -38,7 +37,6 @@ export default function CalendarOverlay() {
 
     const { isListening, transcript, startListening, stopListening, resetTranscript } = useSpeechRecognition()
 
-    // SWITCH TO BASIC HOOK
     const { prompt, ready } = usePromptAPI({
         systemPrompt: `You are a helpful calendar assistant. 
         The current time and timezone is ${new Date().toTimeString()}.
@@ -49,11 +47,11 @@ export default function CalendarOverlay() {
         2. Respond ONLY with valid JSON matching this structure:
         ${SCHEMA_DEF}
         3. Rules:
-           - 'start' and 'end' MUST be valid ISO 8601 strings.
-           - If no end time, assume 1 hour.
-           - If no date, assume tomorrow.
-           - Infer relative dates from today.
-           - Do not add any markdown formatting (no \`\`\`json). Just the raw JSON string.
+        ${"   "}- 'start' and 'end' MUST be valid ISO 8601 strings.
+        ${"   "}- If no end time, assume 1 hour.
+        ${"   "}- If no date, assume tomorrow.
+        ${"   "}- Infer relative dates from today.
+        ${"   "}- Do not add any markdown formatting (no \`\`\`json). Just the raw JSON string.
         `
     })
 
@@ -71,7 +69,7 @@ export default function CalendarOverlay() {
 
     const checkCapabilities = async () => {
         try {
-            const availability = await LanguageModel.availability()
+            const availability = await (window as any).ai.languageModel.availability()
             setCapabilityStatus(availability)
         } catch (e) {
             setCapabilityStatus("unknown")
@@ -81,8 +79,8 @@ export default function CalendarOverlay() {
     const handleDownloadModel = async () => {
         setIsDownloading(true)
         try {
-            await LanguageModel.create({
-                monitor(m) {
+            await (window as any).ai.languageModel.create({
+                monitor(m: any) {
                     m.addEventListener("downloadprogress", (e: any) => {
                         console.log(`Downloaded ${e.loaded} of ${e.total} bytes.`)
                         setDownloadProgress(e.loaded / e.total)
@@ -90,7 +88,7 @@ export default function CalendarOverlay() {
                 },
             })
             setCapabilityStatus("readily")
-        } catch (e) {
+        } catch (e: any) {
             setErrorMessage(`Download failed: ${e.message}`)
             setStatus("error")
         } finally {
@@ -169,7 +167,7 @@ export default function CalendarOverlay() {
                 setGeneratedEvents([])
                 setStatus("idle")
             }, 2000)
-        } catch (e) {
+        } catch (e: any) {
             setStatus("error")
             setErrorMessage(e.message)
         }
@@ -181,142 +179,165 @@ export default function CalendarOverlay() {
     }
 
     return (
-        <div className="fixed bottom-8 left-1/2 -translate-x-1/2 z-50 font-sans">
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[9999] font-sans flex flex-col items-center gap-3 w-full max-w-xl pointer-events-none">
             {/* Main Modal */}
             {isOpen && (
-                <div className="mb-4 w-96 bg-white/90 backdrop-blur-xl rounded shadow-2xl border border-white/50 overflow-hidden animate-in slide-in-from-bottom-10 fade-in duration-300">
+                <div className="pointer-events-auto w-full bg-[#0a0a0a]/80 backdrop-blur-2xl rounded-[2rem] border border-white/10 shadow-2xl overflow-hidden animate-in slide-in-from-bottom-5 fade-in duration-300 ring-1 ring-white/5">
 
-                    {/* Header */}
-                    <div className="flex items-center justify-between p-4 border-b border-gray-100">
-                        <h2 className="font-semibold text-gray-800">
-                            {status === "review" ? `Review (${generatedEvents.length})` : "New Event"}
-                        </h2>
-                        <button onClick={toggleOverlay} className="p-1 rounded-full hover:bg-gray-100 text-gray-500 transition">
-                            <X size={18} />
+                    {/* Header - Minimal */}
+                    <div className="flex items-center justify-between px-6 pt-5 pb-2">
+                        <div className="flex items-center gap-2 text-white/50 text-sm font-medium tracking-tight">
+                            <Sparkles size={14} className="text-white/40" />
+                            <span>{status === "review" ? "Review Plan" : "New Event"}</span>
+                        </div>
+                        <button
+                            onClick={toggleOverlay}
+                            className="p-1.5 rounded-full hover:bg-white/10 text-white/40 hover:text-white transition-colors"
+                        >
+                            <X size={16} />
                         </button>
                     </div>
 
-                    <div className="p-4">
+                    <div className="p-6 pt-2">
                         {/* Capability Check / Download View */}
-                        {capabilityStatus !== "available" && capabilityStatus !== "unknown" ? (
-                            <div className="flex flex-col items-center text-center py-4 space-y-3">
-                                <Download size={32} className="text-blue-600" />
-                                <div>
-                                    <h3 className="font-bold text-gray-800">
+                        {capabilityStatus !== "available" && capabilityStatus !== "readily" && capabilityStatus !== "unknown" ? (
+                            <div className="flex flex-col items-center text-center py-6 space-y-4">
+                                <div className="p-4 bg-white/5 rounded-full ring-1 ring-white/10">
+                                    <Download size={24} className="text-blue-400" />
+                                </div>
+                                <div className="space-y-1">
+                                    <h3 className="font-semibold text-white tracking-tight">
                                         {capabilityStatus === "no" ? "Model Not Available" : "AI Model Needed"}
                                     </h3>
-                                    <p className="text-sm text-gray-500 mt-1">
+                                    <p className="text-sm text-gray-400 max-w-xs mx-auto">
                                         {capabilityStatus === "no"
-                                            ? "The model is not available in your browser, but you can try downloading it anyway."
-                                            : "A small AI model (Gemini Nano) needs to be downloaded to your browser."}
+                                            ? "The model is not available in your browser."
+                                            : "A small AI model needs to be downloaded to your browser."}
                                     </p>
                                 </div>
 
                                 {isDownloading ? (
-                                    <div className="w-full max-w-xs mt-2">
-                                        <div className="bg-gray-200 rounded-full h-2 w-full">
+                                    <div className="w-full max-w-xs space-y-2">
+                                        <div className="bg-white/10 rounded-full h-1 w-full overflow-hidden">
                                             <div
-                                                className="bg-blue-600 h-2 rounded-full transition-all"
+                                                className="bg-blue-500 h-full rounded-full transition-all duration-300"
                                                 style={{ width: `${downloadProgress * 100}%` }}
                                             ></div>
                                         </div>
-                                        <p className="text-xs text-gray-600 mt-2">
-                                            Downloading... {Math.round(downloadProgress * 100)}%
+                                        <p className="text-[10px] text-gray-500 font-mono text-right">
+                                            {Math.round(downloadProgress * 100)}%
                                         </p>
                                     </div>
                                 ) : (
                                     <button
                                         onClick={handleDownloadModel}
-                                        className="px-4 py-2 bg-blue-600 text-white rounded-xl font-medium hover:bg-blue-700 transition"
+                                        className="px-5 py-2.5 bg-blue-600 hover:bg-blue-500 text-white text-sm rounded-xl font-medium transition-all shadow-lg shadow-blue-900/20 active:scale-95"
                                     >
                                         Download Model
                                     </button>
                                 )}
                             </div>
                         ) : (status === "idle" || status === "generating" || status === "error" ? (
-                            <>
-                                <div className="relative">
+                            <div className="space-y-4">
+                                <div className="relative group">
                                     <textarea
-                                        className="w-full h-32 p-3 bg-gray-50 rounded-xl resize-none focus:outline-none focus:ring-2 focus:ring-blue-500/50 text-gray-700 placeholder-gray-400"
-                                        placeholder="Describe your event... e.g. 'Coffee with Ryan tomorrow at 10am'"
+                                        className="w-full h-24 bg-transparent border-0 p-4 text-xl font-medium text-white placeholder-white/20 resize-none focus:ring-0 leading-relaxed"
+                                        placeholder="Coffee with Ryan tomorrow at 10am..."
                                         value={textInput}
                                         onChange={(e) => setTextInput(e.target.value)}
                                         disabled={status === "generating"}
+                                        autoFocus
                                     />
 
-                                    <button
-                                        className={`absolute bottom-3 right-3 p-2 rounded-full transition-colors ${isListening ? "bg-red-100 text-red-600 animate-pulse" : "bg-white text-gray-500 hover:bg-gray-200"}`}
-                                        onClick={isListening ? stopListening : startListening}
-                                        disabled={status === "generating"}
-                                    >
-                                        <Mic size={18} />
-                                    </button>
+                                    {/* Action Bar */}
+                                    <div className="flex items-center justify-between mt-2">
+                                        <button
+                                            className={`p-2.5 rounded-full transition-all duration-300 ${isListening ? "bg-red-500/20 text-red-400 ring-1 ring-red-500/50 animate-pulse" : "bg-white/5 text-gray-400 hover:bg-white/10 hover:text-white"}`}
+                                            onClick={isListening ? stopListening : startListening}
+                                            disabled={status === "generating"}
+                                        >
+                                            <Mic size={18} />
+                                        </button>
+
+                                        <button
+                                            onClick={handleGenerate}
+                                            disabled={!textInput.trim() || status === "generating" || !ready}
+                                            className={`
+                                                flex items-center justify-center p-2.5 rounded-2xl transition-all duration-300
+                                                ${!textInput.trim() || status === "generating"
+                                                    ? "bg-white/5 text-gray-500 cursor-not-allowed"
+                                                    : "bg-white text-black hover:scale-105 active:scale-95 shadow-lg shadow-white/10"}
+                                            `}
+                                        >
+                                            {status === "generating" ? (
+                                                <Loader2 size={20} className="animate-spin" />
+                                            ) : (
+                                                <Send size={20} className={textInput.trim() ? "translate-x-0.5" : ""} />
+                                            )}
+                                        </button>
+                                    </div>
                                 </div>
 
                                 {status === "error" && (
-                                    <p className="text-red-500 text-sm mt-2">
+                                    <div className="bg-red-500/10 border border-red-500/20 rounded-xl p-3 text-red-400 text-sm animate-in fade-in slide-in-from-top-2">
                                         {errorMessage || "Something went wrong."}
-                                    </p>
+                                    </div>
                                 )}
-
-                                <div className="mt-4 flex justify-end">
-                                    <button
-                                        onClick={handleGenerate}
-                                        disabled={!textInput.trim() || status === "generating" || !ready}
-                                        className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white rounded-xl font-medium shadow-lg shadow-blue-600/20 transition-all active:scale-95"
-                                    >
-                                        {status === "generating" ? (
-                                            <>
-                                                <Loader2 size={16} className="animate-spin" />
-                                                <span>Thinking...</span>
-                                            </>
-                                        ) : (
-                                            <>
-                                                <span>Generate Plan</span>
-                                                <Send size={16} />
-                                            </>
-                                        )}
-                                    </button>
-                                </div>
-                            </>
+                            </div>
                         ) : (
                             // Review / Success State
-                            <div className="space-y-4">
+                            <div className="space-y-6">
                                 {status === "success" ? (
-                                    <div className="flex flex-col items-center justify-center py-8 text-green-600">
-                                        <div className="p-3 bg-green-100 rounded-full mb-3">
-                                            <Check size={32} />
+                                    <div className="flex flex-col items-center justify-center py-8 text-center animate-in zoom-in-95 duration-300">
+                                        <div className="w-16 h-16 bg-green-500/20 rounded-full flex items-center justify-center mb-4 ring-1 ring-green-500/30">
+                                            <Check size={32} className="text-green-400" />
                                         </div>
-                                        <p className="font-semibold">Events Created!</p>
+                                        <h3 className="text-xl font-bold text-white mb-1">Scheduled!</h3>
+                                        <p className="text-gray-400 text-sm">Your events have been added to the calendar.</p>
                                     </div>
                                 ) : (
                                     <>
-                                        <div className="max-h-60 overflow-y-auto space-y-2 px-1">
+                                        <div className="max-h-60 overflow-y-auto space-y-2 pr-2 -mr-2 scrollbar-none">
                                             {generatedEvents.map((evt, idx) => (
-                                                <div key={idx} className="bg-gray-50 p-4 rounded-xl border border-gray-100 space-y-1">
-                                                    <h3 className="font-bold text-sm">{evt.summary}</h3>
-                                                    <div className="text-xs text-gray-600">
-                                                        <p>📅 {evt.start.dateTime ? new Date(evt.start.dateTime).toLocaleString() : ""}</p>
-                                                        {evt.location && <p>📍 {evt.location}</p>}
+                                                <div key={idx} className="group bg-white/5 hover:bg-white/10 border border-white/5 hover:border-white/10 p-4 rounded-2xl transition-all duration-200">
+                                                    <div className="flex items-start justify-between gap-4">
+                                                        <div className="space-y-1">
+                                                            <h3 className="font-semibold text-white/90 text-sm leading-tight">{evt.summary}</h3>
+                                                            {evt.location && (
+                                                                <p className="text-xs text-white/40 flex items-center gap-1.5">
+                                                                    <span className="w-1 h-1 rounded-full bg-white/30"></span>
+                                                                    {evt.location}
+                                                                </p>
+                                                            )}
+                                                        </div>
+                                                        <div className="text-xs font-medium text-white/60 bg-white/5 px-2 py-1 rounded-lg whitespace-nowrap">
+                                                            {evt.start.dateTime ? new Date(evt.start.dateTime).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }) : ""}
+                                                            <div className="text-[10px] text-white/30 text-right uppercase tracking-wider mt-0.5">
+                                                                {evt.start.dateTime ? new Date(evt.start.dateTime).toLocaleDateString([], { month: 'short', day: 'numeric' }) : ""}
+                                                            </div>
+                                                        </div>
                                                     </div>
+                                                    {evt.description && (
+                                                        <p className="mt-2 text-xs text-white/40 line-clamp-2 px-0.5">{evt.description}</p>
+                                                    )}
                                                 </div>
                                             ))}
                                         </div>
 
-                                        <div className="flex justify-between gap-2">
+                                        <div className="grid grid-cols-2 gap-3">
                                             <button
                                                 onClick={handleRetry}
-                                                className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl font-medium transition-colors"
+                                                className="flex items-center justify-center gap-2 px-4 py-3 bg-white/5 hover:bg-white/10 text-white/60 hover:text-white rounded-xl font-medium transition-all text-sm group"
                                             >
-                                                <RefreshCcw size={16} />
+                                                <RefreshCcw size={16} className="group-hover:-rotate-180 transition-transform duration-500" />
                                                 <span>Retry</span>
                                             </button>
                                             <button
                                                 onClick={handleApprove}
-                                                className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-xl font-medium shadow-lg shadow-green-600/20 transition-all active:scale-95"
+                                                className="flex items-center justify-center gap-2 px-4 py-3 bg-white text-black hover:bg-gray-200 rounded-xl font-bold transition-all shadow-lg shadow-white/5 active:scale-95 text-sm"
                                             >
-                                                {status === "creating" ? <Loader2 size={16} className="animate-spin" /> : <Check size={16} />}
-                                                <span>Approve All</span>
+                                                {status === "creating" ? <Loader2 size={16} className="animate-spin" /> : <Calendar size={16} />}
+                                                <span>Add to Calendar</span>
                                             </button>
                                         </div>
                                     </>
@@ -327,14 +348,14 @@ export default function CalendarOverlay() {
                 </div>
             )}
 
-            {/* Floating Trigger Button */}
+            {/* Floating Trigger Button - Modern Icon */}
             {!isOpen && (
                 <button
                     onClick={toggleOverlay}
-                    className="p-2 bg-white/10 backdrop-blur-md text-white rounded-full shadow-2xl hover:shadow-blue-600/30 transition-all hover:scale-105 active:scale-95 flex items-center gap-2 text-xs"
+                    className="pointer-events-auto h-14 w-14 bg-[#0a0a0a] hover:bg-[#1a1a1a] text-white rounded-full shadow-2xl shadow-black/50 hover:scale-110 active:scale-90 transition-all duration-300 flex items-center justify-center ring-1 ring-white/10 group"
                 >
-                    <CalendarPlus size={14} />
-                    <span>Plan Events</span>
+                    <Sparkles size={24} className="group-hover:rotate-12 transition-transform duration-300" strokeWidth={1.5} />
+                    <span className="sr-only">Plan Events</span>
                 </button>
             )}
         </div>
