@@ -6,6 +6,7 @@ import { motion, AnimatePresence } from "framer-motion"
 import { useSpeechRecognition } from "../hooks/useSpeechRecognition"
 import { createEvent, type CalendarEvent } from "../lib/calendar"
 import "../style.css"
+import { LannerAILogo } from "./LannerAILogo"
 
 // Move schema to a constant string for the prompt
 const SCHEMA_DEF = `
@@ -194,7 +195,7 @@ export default function CalendarOverlay() {
                         {/* Header - Minimal */}
                         <div className="flex items-center justify-between px-6 pt-5 pb-2">
                             <div className="flex items-center gap-2 text-white/50 text-sm font-medium tracking-tight">
-                                <Sparkles size={14} className="text-white/40" />
+                                <LannerAILogo className="h-4 w-4" />
                                 <span>{status === "review" ? "Review Plan" : "New Event"}</span>
                             </div>
                             <button
@@ -267,6 +268,12 @@ export default function CalendarOverlay() {
                                                 placeholder="Coffee with Ryan tomorrow at 10am..."
                                                 value={textInput}
                                                 onChange={(e) => setTextInput(e.target.value)}
+                                                onKeyDown={(e) => {
+                                                    if (e.key === "Enter" && !e.shiftKey) {
+                                                        e.preventDefault()
+                                                        handleGenerate()
+                                                    }
+                                                }}
                                                 disabled={status === "generating"}
                                                 autoFocus
                                             />
@@ -397,7 +404,7 @@ export default function CalendarOverlay() {
                         onClick={toggleOverlay}
                         className="col-start-1 row-start-1 pointer-events-auto h-14 w-14 bg-[#0a0a0a] hover:bg-[#1a1a1a] text-white rounded-full shadow-2xl shadow-black/50 flex items-center justify-center ring-1 ring-white/10 group z-10"
                     >
-                        <Sparkles size={24} className="group-hover:rotate-12 transition-transform duration-300" strokeWidth={1.5} />
+                        <LannerAILogo className="hover:rotate-12 transition-transform duration-300" />
                         <span className="sr-only">Plan Events</span>
                     </motion.button>
                 )}

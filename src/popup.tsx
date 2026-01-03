@@ -1,8 +1,9 @@
-import { useState, useEffect } from "react"
-import { X, Mic, Send, Check, Loader2, RefreshCcw, Download, Sparkles, Calendar } from "lucide-react"
 import { usePromptAPI } from "@ahnopologetic/use-prompt-api/react"
-import { motion, AnimatePresence } from "framer-motion"
+import { AnimatePresence, motion } from "framer-motion"
+import { Calendar, Check, Download, Loader2, Mic, RefreshCcw, Send } from "lucide-react"
+import { useEffect, useState } from "react"
 
+import { LannerAILogo } from "~components/LannerAILogo"
 import { useSpeechRecognition } from "./hooks/useSpeechRecognition"
 import { createEvent, type CalendarEvent } from "./lib/calendar"
 import "./style.css"
@@ -178,7 +179,7 @@ function IndexPopup() {
       {/* Header - Minimal */}
       <div className="flex items-center justify-between px-6 pt-5 pb-2 border-b border-white/5 bg-[#0a0a0a] sticky top-0 z-10">
         <div className="flex items-center gap-2 text-white/50 text-sm font-medium tracking-tight">
-          <Sparkles size={14} className="text-white/40" />
+          <LannerAILogo className="h-4 w-4" />
           <span>{status === "review" ? "Review Plan" : "New Event"}</span>
         </div>
         {/* No close button needed for popup */}
