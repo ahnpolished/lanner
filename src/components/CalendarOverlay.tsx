@@ -4,12 +4,13 @@ import { usePromptAPI } from "@ahnopologetic/use-prompt-api/react"
 import { motion, AnimatePresence } from "framer-motion"
 
 import { useSpeechRecognition } from "../hooks/useSpeechRecognition"
-import { createEvent, type CalendarEvent } from "../lib/calendar"
+import { createEvent, type CalendarEvent, getAuthToken } from "../lib/calendar"
 import { LannerAILogo } from "./LannerAILogo"
 import { ModelDownloadStatus } from "./ModelDownloadStatus"
 import { AIModelAvailability, normalizeAvailability } from "~lib/ai"
 import { getUserConfig, saveUserConfig, type AIPreference } from "~lib/storage"
 import { Onboarding } from "./Onboarding"
+import { GoogleSignIn } from "./GoogleSignIn"
 
 
 // Move schema to a constant string for the prompt
@@ -35,8 +36,10 @@ export default function CalendarOverlay() {
   const [status, setStatus] = useState<"idle" | "generating" | "review" | "creating" | "success" | "error">("idle")
   const [errorMessage, setErrorMessage] = useState("")
 
-  // Onboarding & Config
+  // Onboarding & Config & Auth
   const [isOnboarding, setIsOnboarding] = useState(true)
+  const [isAuthenticated, setIsAuthenticated] = useState(false)
+  const [isCheckingAuth, setIsCheckingAuth] = useState(true)
 
   const { isListening, transcript, startListening, stopListening, resetTranscript } = useSpeechRecognition()
 
@@ -54,7 +57,7 @@ export default function CalendarOverlay() {
         ${"   "}- If no end time, assume 1 hour.
         ${"   "}- If no date, assume tomorrow.
         ${"   "}- Infer relative dates from today.
-                ${"   "}- Do not add any markdown formatting (no markdown code blocks). Just the raw JSON string.
+        ${"   "}- Do not add any markdown formatting (no markdown code blocks). Just the raw JSON string.
         `
   })
 
@@ -72,14 +75,25 @@ export default function CalendarOverlay() {
     }
   }, [transcript, resetTranscript])
 
-  // Check config when opening
+  // Check config and auth when opening
   useEffect(() => {
     if (isOpen) {
-      const checkConfig = async () => {
+      const checkState = async () => {
+        setIsCheckingAuth(true)
         const config = await getUserConfig()
         setIsOnboarding(!config.onboardingCompleted)
+
+        // Check if we have a valid token (non-interactive first)
+        try {
+          await getAuthToken(false)
+          setIsAuthenticated(true)
+        } catch (e) {
+          setIsAuthenticated(false)
+        } finally {
+          setIsCheckingAuth(false)
+        }
       }
-      checkConfig()
+      checkState()
     }
   }, [isOpen])
 
@@ -94,6 +108,10 @@ export default function CalendarOverlay() {
   const handleOnboardingComplete = async (pref: AIPreference) => {
     await saveUserConfig({ aiPreference: pref, onboardingCompleted: true })
     setIsOnboarding(false)
+  }
+
+  const handleAuthSuccess = () => {
+    setIsAuthenticated(true)
   }
 
   const handleGenerate = async () => {
@@ -170,6 +188,28 @@ export default function CalendarOverlay() {
   }
 
   const renderMainContent = () => {
+    if (isCheckingAuth) {
+      return (
+        <div className="flex items-center justify-center h-48">
+          <Loader2 className="animate-spin text-white/20" />
+        </div>
+      )
+    }
+
+    if (!isAuthenticated) {
+      return (
+        <motion.div
+          key="auth"
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -10 }}
+          transition={{ duration: 0.2 }}
+        >
+          <GoogleSignIn onSuccess={handleAuthSuccess} />
+        </motion.div>
+      )
+    }
+
     if (derivedAvailability !== AIModelAvailability.AVAILABLE) {
       return (
         <motion.div
@@ -323,7 +363,6 @@ export default function CalendarOverlay() {
       </motion.div>
     )
   }
-
   return (
     <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[9999] font-sans grid w-full max-w-xl pointer-events-none justify-items-center items-end">
       {/* Main Modal */}

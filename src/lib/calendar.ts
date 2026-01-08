@@ -35,22 +35,42 @@ export const getAuthToken = async (interactive: boolean = true): Promise<string>
     }
 
     // 2. Fetch New Token
-    return new Promise((resolve, reject) => {
-        chrome.identity.getAuthToken({ interactive }, (token) => {
-            if (chrome.runtime.lastError || !token) {
-                reject(chrome.runtime.lastError?.message || "No token received")
-            } else {
-                // Cache the new token
-                chrome.storage.local.set({
-                    [TOKEN_CACHE_KEY]: {
-                        token,
-                        timestamp: Date.now()
-                    }
-                })
-                resolve(token)
-            }
+    if (typeof chrome.identity !== "undefined") {
+        return new Promise((resolve, reject) => {
+            chrome.identity.getAuthToken({ interactive }, (token) => {
+                if (chrome.runtime.lastError || !token) {
+                    reject(chrome.runtime.lastError?.message || "No token received")
+                } else {
+                    // Cache the new token
+                    chrome.storage.local.set({
+                        [TOKEN_CACHE_KEY]: {
+                            token,
+                            timestamp: Date.now()
+                        }
+                    })
+                    resolve(token)
+                }
+            })
         })
-    })
+    } else {
+        // Fallback: Delegate to Background Script (e.g. from Content Script)
+        return new Promise((resolve, reject) => {
+            chrome.runtime.sendMessage(
+                { type: "GET_AUTH_TOKEN", payload: { interactive } },
+                (response) => {
+                    if (chrome.runtime.lastError) {
+                        reject(chrome.runtime.lastError.message)
+                    } else if (response && response.error) {
+                        reject(response.error)
+                    } else if (response && response.token) {
+                        resolve(response.token)
+                    } else {
+                        reject("Failed to retrieve token from background")
+                    }
+                }
+            )
+        })
+    }
 }
 
 export const clearTokenCache = async () => {
