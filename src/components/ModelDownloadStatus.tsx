@@ -3,69 +3,69 @@ import { Download, RefreshCw, X, Sparkles } from "lucide-react"
 import { AIModelAvailability } from "~lib/ai"
 
 interface ModelDownloadStatusProps {
-    availability: AIModelAvailability
+  availability: AIModelAvailability
 }
 
 export function ModelDownloadStatus({ availability }: ModelDownloadStatusProps) {
-    const [downloadProgress, setDownloadProgress] = useState<number>(0)
-    const [isDownloading, setIsDownloading] = useState(false)
-    const [restartRequired, setRestartRequired] = useState(false)
-    const [error, setError] = useState<string | null>(null)
+  const [downloadProgress, setDownloadProgress] = useState<number>(0)
+  const [isDownloading, setIsDownloading] = useState(false)
+  const [restartRequired, setRestartRequired] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
-    const isChrome = /Chrome/.test(navigator.userAgent) && /Google Inc/.test(navigator.vendor)
+  const isChrome = /Chrome/.test(navigator.userAgent) && /Google Inc/.test(navigator.vendor)
 
-    useEffect(() => {
-        // Check if restart was previously requested
-        chrome.storage.local.get("restartRequired", (result) => {
-            if (result.restartRequired) {
-                // If availability is now "readily" (or "available"), then the restart likely happened or model became available
-                // But typically if we just set the flag, we want to show the message until they restart.
-                // However, if the model IS available, we shouldn't block them.
-                if (availability === AIModelAvailability.AVAILABLE) { 
-                    // actually looking at the previous file, it used 'availability !== "available"'
-                    // effectively clearing it if it works now.
-                    chrome.storage.local.remove("restartRequired")
-                    setRestartRequired(false)
-                } else {
-                    setRestartRequired(true)
-                }
-            }
-        })
-    }, [availability])
-
-    const handleDownloadModel = async () => {
-        setIsDownloading(true)
-        setError(null)
-        try {
-            // @ts-ignore - LanguageModel is global in this context
-            await LanguageModel.create({
-                monitor(m: any) {
-                    m.addEventListener("downloadprogress", (e: any) => {
-                        console.log(`Downloaded ${e.loaded} of ${e.total} bytes.`)
-                        // Sometimes total is 0 or undefined if unknown
-                        if (e.total > 0) {
-                            setDownloadProgress(e.loaded / e.total)
-                        }
-                    })
-                },
-            })
-            // If we get here, download finished successfully (or at least the create call finished)
-            // Ideally we'd wait for confirm, but usually this means it's ready or needs restart.
-            // For Chrome built-in AI, often a restart is needed after first download.
-
-            setRestartRequired(true)
-            chrome.storage.local.set({ restartRequired: true })
-
-        } catch (e: any) {
-            console.error(e)
-            setError(`Download failed: ${e.message}`)
-        } finally {
-            setIsDownloading(false)
+  useEffect(() => {
+    // Check if restart was previously requested
+    chrome.storage.local.get("restartRequired", (result) => {
+      if (result.restartRequired) {
+        // If availability is now "readily" (or "available"), then the restart likely happened or model became available
+        // But typically if we just set the flag, we want to show the message until they restart.
+        // However, if the model IS available, we shouldn't block them.
+        if (availability === AIModelAvailability.AVAILABLE) {
+          // actually looking at the previous file, it used 'availability !== "available"'
+          // effectively clearing it if it works now.
+          chrome.storage.local.remove("restartRequired")
+          setRestartRequired(false)
+        } else {
+          setRestartRequired(true)
         }
-    }
+      }
+    })
+  }, [availability])
 
-    if (availability === AIModelAvailability.NOT_SUPPORTED) {
-        if (!isChrome) {
+  const handleDownloadModel = async () => {
+    setIsDownloading(true)
+    setError(null)
+    try {
+      // @ts-ignore - LanguageModel is global in this context
+      await LanguageModel.create({
+        monitor(m: any) {
+          m.addEventListener("downloadprogress", (e: any) => {
+            console.log(`Downloaded ${e.loaded} of ${e.total} bytes.`)
+            // Sometimes total is 0 or undefined if unknown
+            if (e.total > 0) {
+              setDownloadProgress(e.loaded / e.total)
+            }
+          })
+        },
+      })
+      // If we get here, download finished successfully (or at least the create call finished)
+      // Ideally we'd wait for confirm, but usually this means it's ready or needs restart.
+      // For Chrome built-in AI, often a restart is needed after first download.
+
+      setRestartRequired(true)
+      chrome.storage.local.set({ restartRequired: true })
+
+    } catch (e: any) {
+      console.error(e)
+      setError(`Download failed: ${e.message}`)
+    } finally {
+      setIsDownloading(false)
+    }
+  }
+
+  if (availability === AIModelAvailability.NOT_SUPPORTED) {
+    if (!isChrome) {
       return (
         <div className="flex flex-col items-center text-center py-6 space-y-4">
           <div className="p-4 bg-red-500/10 rounded-full ring-1 ring-red-500/20">
