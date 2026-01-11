@@ -1,17 +1,18 @@
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { X, Mic, Send, Check, Loader2, RefreshCcw, Download, Sparkles, Calendar } from "lucide-react"
 import { usePromptAPI } from "@ahnopologetic/use-prompt-api/react"
 import { motion, AnimatePresence } from "framer-motion"
 
 import { useSpeechRecognition } from "../hooks/useSpeechRecognition"
 import { createEvent, type CalendarEvent, getAuthToken } from "../lib/calendar"
+import { getContacts, type Contact, searchContacts } from "../lib/contacts"
 import { LannerAILogo } from "./LannerAILogo"
 import { ModelDownloadStatus } from "./ModelDownloadStatus"
 import { AIModelAvailability, normalizeAvailability } from "~lib/ai"
 import { getUserConfig, saveUserConfig, type AIPreference } from "~lib/storage"
 import { Onboarding } from "./Onboarding"
 import { GoogleSignIn } from "./GoogleSignIn"
-
+import { MentionList } from "./MentionList"
 
 // Move schema to a constant string for the prompt
 const SCHEMA_DEF = `
@@ -28,6 +29,44 @@ const SCHEMA_DEF = `
 }
 `
 
+// Utility to get caret coordinates
+const getCaretCoordinates = (element: HTMLTextAreaElement, position: number) => {
+  const div = document.createElement('div')
+  const style = window.getComputedStyle(element)
+
+  Array.from(style).forEach((prop) => {
+    div.style.setProperty(prop, style.getPropertyValue(prop), style.getPropertyPriority(prop))
+  })
+
+  div.style.position = 'fixed'
+  div.style.top = '0px'
+  div.style.left = '0px'
+  div.style.visibility = 'hidden'
+  div.style.height = 'auto'
+  div.style.width = style.width
+  div.style.overflow = 'hidden'
+  div.style.whiteSpace = 'pre-wrap'
+
+  div.textContent = element.value.substring(0, position)
+
+  const span = document.createElement('span')
+  span.textContent = '.'
+  div.appendChild(span)
+
+  document.body.appendChild(div)
+
+  const spanRect = span.getBoundingClientRect()
+  const elementRect = element.getBoundingClientRect()
+  
+  // Calculate relative to the element (not viewport)
+  const top = span.offsetTop - element.scrollTop
+  const left = span.offsetLeft - element.scrollLeft
+
+  document.body.removeChild(div)
+
+  return { top, left }
+}
+
 export default function CalendarOverlay() {
   const [isOpen, setIsOpen] = useState(false)
   const [textInput, setTextInput] = useState("")
@@ -40,6 +79,20 @@ export default function CalendarOverlay() {
   const [isOnboarding, setIsOnboarding] = useState(true)
   const [isAuthenticated, setIsAuthenticated] = useState(false)
   const [isCheckingAuth, setIsCheckingAuth] = useState(true)
+  
+  // Contacts & Mentions
+  const [contacts, setContacts] = useState<Contact[]>([])
+  const [isSearching, setIsSearching] = useState(false)
+  const [mentionState, setMentionState] = useState<{
+    active: boolean
+    query: string
+    start: number
+    top: number
+    left: number
+  }>({ active: false, query: "", start: 0, top: 0, left: 0 })
+  
+  const searchTimeoutRef = useRef<NodeJS.Timeout>()
+  const textareaRef = useRef<HTMLTextAreaElement>(null)
 
   const { isListening, transcript, startListening, stopListening, resetTranscript } = useSpeechRecognition()
 
@@ -87,6 +140,8 @@ export default function CalendarOverlay() {
         try {
           await getAuthToken(false)
           setIsAuthenticated(true)
+          // Fetch contacts in background
+          getContacts().then(setContacts)
         } catch (e) {
           setIsAuthenticated(false)
         } finally {
@@ -102,6 +157,7 @@ export default function CalendarOverlay() {
     if (!isOpen) {
       setGeneratedEvents([])
       setStatus("idle")
+      setMentionState(prev => ({ ...prev, active: false }))
     }
   }
 
@@ -112,6 +168,7 @@ export default function CalendarOverlay() {
 
   const handleAuthSuccess = () => {
     setIsAuthenticated(true)
+    getContacts().then(setContacts)
   }
 
   const handleGenerate = async () => {
@@ -187,6 +244,83 @@ export default function CalendarOverlay() {
     setStatus("idle")
   }
 
+  // Mention Logic
+  const handleInput = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    const newVal = e.target.value
+    const newPos = e.target.selectionStart
+    setTextInput(newVal)
+
+    // Clear any pending search
+    if (searchTimeoutRef.current) clearTimeout(searchTimeoutRef.current)
+
+    // Check for mention trigger
+    // Look backwards from cursor for '@'
+    const textBeforeCursor = newVal.slice(0, newPos)
+    const mentionMatch = textBeforeCursor.match(/(?<=^|\s)@(\w*)$/)
+
+    if (mentionMatch && mentionMatch.index !== undefined) {
+      const query = mentionMatch[1]
+      const start = mentionMatch.index
+      
+      // Calculate coordinates
+      const coords = getCaretCoordinates(e.target, start + 1) // +1 for @
+      
+      setMentionState({
+        active: true,
+        query,
+        start, // This is the index of '@'
+        top: coords.top - 220, // Move up by approx dropdown height
+        left: coords.left
+      })
+
+      // Debounced API search if query is long enough
+      if (query.length >= 2) {
+        setIsSearching(true)
+        searchTimeoutRef.current = setTimeout(async () => {
+          try {
+            const results = await searchContacts(query)
+            if (results.length > 0) {
+              setContacts(prev => {
+                const combined = [...prev]
+                results.forEach(r => {
+                  if (!combined.some(c => c.email === r.email)) {
+                    combined.push(r)
+                  }
+                })
+                return combined
+              })
+            }
+          } finally {
+            setIsSearching(false)
+          }
+        }, 500) // 500ms debounce
+      }
+    } else {
+      setMentionState(prev => ({ ...prev, active: false }))
+      setIsSearching(false)
+    }
+  }
+
+  const handleSelectContact = (contact: Contact) => {
+    // Replace text after @ with Contact Name
+    const before = textInput.slice(0, mentionState.start + 1) // Keep the @
+    const after = textInput.slice(textareaRef.current?.selectionStart || textInput.length)
+    const insert = `${contact.name} ` 
+    
+    const newText = before + insert + after
+    setTextInput(newText)
+    setMentionState(prev => ({ ...prev, active: false }))
+    
+    // Restore focus and cursor
+    setTimeout(() => {
+        if (textareaRef.current) {
+            textareaRef.current.focus()
+            const newCursorPos = before.length + insert.length
+            textareaRef.current.setSelectionRange(newCursorPos, newCursorPos)
+        }
+    }, 0)
+  }
+
   const renderMainContent = () => {
     if (isCheckingAuth) {
       return (
@@ -236,12 +370,37 @@ export default function CalendarOverlay() {
         >
           <div className="relative group">
             <textarea
+              ref={textareaRef}
               className="w-full h-24 bg-transparent border-0 p-4 text-xl text-white placeholder-white/20 resize-none focus:ring-0 leading-relaxed focus:outline-none"
-              placeholder="Coffee with Ryan tomorrow at 10am..."
+              placeholder="Coffee with @Ryan tomorrow at 10am..."
               style={{ fontFamily: "inherit" }}
               value={textInput}
-              onChange={(e) => setTextInput(e.target.value)}
+              onChange={handleInput}
               onKeyDown={(e) => {
+                // If mention list is active, we let it handle arrows/enter via its own listener?
+                // Actually, since the input has focus, we need to block here if needed.
+                // The MentionList component in previous step uses document listener, which works if we don't stopPropagation here.
+                // But we need to prevent the cursor from moving in textarea if we are navigating the list.
+                if (mentionState.active) {
+                    if (e.key === "ArrowDown" || e.key === "ArrowUp") {
+                        e.preventDefault() 
+                        // We need to signal MentionList to move. 
+                        // Since MentionList uses document.keydown, preventing default here might be enough IF the event bubbles.
+                        // But React synthetic events vs native...
+                        // Let's rely on MentionList's document listener for logic, but preventDefault here to stop cursor.
+                        return
+                    }
+                    if (e.key === "Enter" || e.key === "Tab") {
+                        e.preventDefault()
+                        // MentionList handles the selection via document listener
+                        return
+                    }
+                    if (e.key === "Escape") {
+                        setMentionState(prev => ({...prev, active: false}))
+                        return
+                    }
+                }
+
                 if (e.key === "Enter" && !e.shiftKey) {
                   e.preventDefault()
                   handleGenerate()
@@ -250,6 +409,19 @@ export default function CalendarOverlay() {
               disabled={status === "generating"}
               autoFocus
             />
+            
+            <AnimatePresence>
+                {mentionState.active && (
+                    <MentionList 
+                        contacts={contacts}
+                        query={mentionState.query}
+                        onSelect={handleSelectContact}
+                        onClose={() => setMentionState(prev => ({...prev, active: false}))}
+                        position={{ top: mentionState.top, left: mentionState.left }}
+                        isLoading={isSearching}
+                    />
+                )}
+            </AnimatePresence>
 
             {/* Action Bar */}
             <div className="flex items-center justify-between mt-2">
@@ -373,7 +545,7 @@ export default function CalendarOverlay() {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 20, scale: 0.95 }}
             transition={{ duration: 0.2, ease: "easeOut" }}
-            className="col-start-1 row-start-1 pointer-events-auto w-full bg-[#0a0a0a]/80 backdrop-blur-2xl rounded-[2rem] border border-white/10 shadow-2xl overflow-hidden ring-1 ring-white/5 z-20"
+            className="col-start-1 row-start-1 pointer-events-auto w-full bg-[#0a0a0a]/80 backdrop-blur-2xl rounded-[2rem] border border-white/10 shadow-2xl overflow-visible ring-1 ring-white/5 z-20"
           >
             {/* Header - Minimal */}
             <div className="flex items-center justify-between px-6 pt-5 pb-2">

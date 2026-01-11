@@ -44,7 +44,11 @@
     "oauth2": {
       "client_id": "886267481884-ngvqej90a577f8scro0jggfpdq6n8f88.apps.googleusercontent.com",
       "scopes": [
-        "https://www.googleapis.com/auth/calendar.events"
+        "https://www.googleapis.com/auth/calendar.events",
+        "https://www.googleapis.com/auth/contacts.readonly",
+        "https://www.googleapis.com/auth/contacts.other.readonly",
+        "profile",
+        "email"
       ]
     },
     "commands": {
