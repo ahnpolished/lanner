@@ -23,7 +23,8 @@ const SCHEMA_DEF = `
       "start": "ISO 8601 string (e.g., 2024-01-01T10:00:00)",
       "end": "ISO 8601 string",
       "location": "string (optional)",
-      "description": "string (optional)"
+      "description": "string (optional)",
+      "attendees": ["email1@example.com", "email2@example.com"]
     }
   ]
 }
@@ -103,9 +104,10 @@ export default function CalendarOverlay() {
         
         INSTRUCTIONS:
         1. Extract ONE OR MORE event details from the user's request.
-        2. Respond ONLY with valid JSON matching this structure:
+        2. Extract attendees from the text (emails found in brackets like <email@example.com> or just plain emails).
+        3. Respond ONLY with valid JSON matching this structure:
         ${SCHEMA_DEF}
-        3. Rules:
+        4. Rules:
         ${"   "}- 'start' and 'end' MUST be valid ISO 8601 strings.
         ${"   "}- If no end time, assume 1 hour.
         ${"   "}- If no date, assume tomorrow.
@@ -199,6 +201,7 @@ export default function CalendarOverlay() {
           summary: evt.title,
           description: evt.description,
           location: evt.location,
+          attendees: evt.attendees ? evt.attendees.map((email: string) => ({ email })) : undefined,
           start: {
             dateTime: evt.start,
             timeZone: timeZone
@@ -302,10 +305,10 @@ export default function CalendarOverlay() {
   }
 
   const handleSelectContact = (contact: Contact) => {
-    // Replace text after @ with Contact Name
+    // Replace text after @ with Contact Name <email>
     const before = textInput.slice(0, mentionState.start + 1) // Keep the @
     const after = textInput.slice(textareaRef.current?.selectionStart || textInput.length)
-    const insert = `${contact.name} ` 
+    const insert = `${contact.name} <${contact.email}> ` 
     
     const newText = before + insert + after
     setTextInput(newText)
@@ -507,6 +510,15 @@ export default function CalendarOverlay() {
                       </div>
                     </div>
                   </div>
+                  {evt.attendees && evt.attendees.length > 0 && (
+                    <div className="mt-2 flex flex-wrap gap-1">
+                      {evt.attendees.map((att, i) => (
+                        <span key={i} className="text-[10px] bg-indigo-500/10 text-indigo-300 px-1.5 py-0.5 rounded border border-indigo-500/20">
+                          {att.email}
+                        </span>
+                      ))}
+                    </div>
+                  )}
                   {evt.description && (
                     <p className="mt-2 text-xs text-white/40 line-clamp-2 px-0.5">{evt.description}</p>
                   )}
