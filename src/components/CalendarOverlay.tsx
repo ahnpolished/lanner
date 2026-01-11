@@ -58,7 +58,7 @@ const getCaretCoordinates = (element: HTMLTextAreaElement, position: number) => 
 
   const spanRect = span.getBoundingClientRect()
   const elementRect = element.getBoundingClientRect()
-  
+
   // Calculate relative to the element (not viewport)
   const top = span.offsetTop - element.scrollTop
   const left = span.offsetLeft - element.scrollLeft
@@ -80,7 +80,7 @@ export default function CalendarOverlay() {
   const [isOnboarding, setIsOnboarding] = useState(true)
   const [isAuthenticated, setIsAuthenticated] = useState(false)
   const [isCheckingAuth, setIsCheckingAuth] = useState(true)
-  
+
   // Contacts & Mentions
   const [contacts, setContacts] = useState<Contact[]>([])
   const [isSearching, setIsSearching] = useState(false)
@@ -91,7 +91,7 @@ export default function CalendarOverlay() {
     top: number
     left: number
   }>({ active: false, query: "", start: 0, top: 0, left: 0 })
-  
+
   const searchTimeoutRef = useRef<NodeJS.Timeout>()
   const textareaRef = useRef<HTMLTextAreaElement>(null)
 
@@ -264,10 +264,10 @@ export default function CalendarOverlay() {
     if (mentionMatch && mentionMatch.index !== undefined) {
       const query = mentionMatch[1]
       const start = mentionMatch.index
-      
+
       // Calculate coordinates
       const coords = getCaretCoordinates(e.target, start + 1) // +1 for @
-      
+
       setMentionState({
         active: true,
         query,
@@ -308,19 +308,19 @@ export default function CalendarOverlay() {
     // Replace text after @ with Contact Name <email>
     const before = textInput.slice(0, mentionState.start + 1) // Keep the @
     const after = textInput.slice(textareaRef.current?.selectionStart || textInput.length)
-    const insert = `${contact.name} <${contact.email}> ` 
-    
+    const insert = `${contact.name} <${contact.email}> `
+
     const newText = before + insert + after
     setTextInput(newText)
     setMentionState(prev => ({ ...prev, active: false }))
-    
+
     // Restore focus and cursor
     setTimeout(() => {
-        if (textareaRef.current) {
-            textareaRef.current.focus()
-            const newCursorPos = before.length + insert.length
-            textareaRef.current.setSelectionRange(newCursorPos, newCursorPos)
-        }
+      if (textareaRef.current) {
+        textareaRef.current.focus()
+        const newCursorPos = before.length + insert.length
+        textareaRef.current.setSelectionRange(newCursorPos, newCursorPos)
+      }
     }, 0)
   }
 
@@ -385,23 +385,23 @@ export default function CalendarOverlay() {
                 // The MentionList component in previous step uses document listener, which works if we don't stopPropagation here.
                 // But we need to prevent the cursor from moving in textarea if we are navigating the list.
                 if (mentionState.active) {
-                    if (e.key === "ArrowDown" || e.key === "ArrowUp") {
-                        e.preventDefault() 
-                        // We need to signal MentionList to move. 
-                        // Since MentionList uses document.keydown, preventing default here might be enough IF the event bubbles.
-                        // But React synthetic events vs native...
-                        // Let's rely on MentionList's document listener for logic, but preventDefault here to stop cursor.
-                        return
-                    }
-                    if (e.key === "Enter" || e.key === "Tab") {
-                        e.preventDefault()
-                        // MentionList handles the selection via document listener
-                        return
-                    }
-                    if (e.key === "Escape") {
-                        setMentionState(prev => ({...prev, active: false}))
-                        return
-                    }
+                  if (e.key === "ArrowDown" || e.key === "ArrowUp") {
+                    e.preventDefault()
+                    // We need to signal MentionList to move. 
+                    // Since MentionList uses document.keydown, preventing default here might be enough IF the event bubbles.
+                    // But React synthetic events vs native...
+                    // Let's rely on MentionList's document listener for logic, but preventDefault here to stop cursor.
+                    return
+                  }
+                  if (e.key === "Enter" || e.key === "Tab") {
+                    e.preventDefault()
+                    // MentionList handles the selection via document listener
+                    return
+                  }
+                  if (e.key === "Escape") {
+                    setMentionState(prev => ({ ...prev, active: false }))
+                    return
+                  }
                 }
 
                 if (e.key === "Enter" && !e.shiftKey) {
@@ -412,18 +412,18 @@ export default function CalendarOverlay() {
               disabled={status === "generating"}
               autoFocus
             />
-            
+
             <AnimatePresence>
-                {mentionState.active && (
-                    <MentionList 
-                        contacts={contacts}
-                        query={mentionState.query}
-                        onSelect={handleSelectContact}
-                        onClose={() => setMentionState(prev => ({...prev, active: false}))}
-                        position={{ top: mentionState.top, left: mentionState.left }}
-                        isLoading={isSearching}
-                    />
-                )}
+              {mentionState.active && (
+                <MentionList
+                  contacts={contacts}
+                  query={mentionState.query}
+                  onSelect={handleSelectContact}
+                  onClose={() => setMentionState(prev => ({ ...prev, active: false }))}
+                  position={{ top: mentionState.top, left: mentionState.left }}
+                  isLoading={isSearching}
+                />
+              )}
             </AnimatePresence>
 
             {/* Action Bar */}
@@ -557,7 +557,7 @@ export default function CalendarOverlay() {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 20, scale: 0.95 }}
             transition={{ duration: 0.2, ease: "easeOut" }}
-            className="col-start-1 row-start-1 pointer-events-auto w-full bg-[#0a0a0a]/80 backdrop-blur-2xl rounded-[2rem] border border-white/10 shadow-2xl overflow-visible ring-1 ring-white/5 z-20"
+            className="col-start-1 row-start-1 pointer-events-auto w-full bg-[#0a0a0a] backdrop-blur-2xl rounded-[2rem] border border-white/10 shadow-2xl overflow-visible ring-1 ring-white/5 z-20"
           >
             {/* Header - Minimal */}
             <div className="flex items-center justify-between px-6 pt-5 pb-2">
